@@ -377,7 +377,7 @@ const App: React.FC = () => {
         )}
       </main>
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t py-2 px-8 text-[10px] text-center text-slate-400 z-50">
-        Công thức Độ lệch: Δ = ĐBQtx - CK (Thi thấp hơn quá trình nếu Δ > 0)
+        Công thức Độ lệch: Δ = ĐBQtx - CK (Thi thấp hơn quá trình nếu Δ ≥ 0)
       </footer>
     </div>
   );

@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const [filterColumn, setFilterColumn] = useState<'avgTX' | 'ck' | 'dtb'>('dtb');
   
   const [activeTab, setActiveTab] = useState<'general' | 'delta'>('general');
-  const [showChart, setShowChart] = useState<'distribution' | 'boxplot' | 'histogram' | 'comparison' | 'delta_scatter' | 'delta_bar' | null>(null);
+  const [showChart, setShowChart] = useState<'distribution' | 'boxplot' | 'histogram' | 'comparison' | 'delta_scatter' | 'delta_bar' | 'above_average' | null>(null);
   const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>, grade: string, type: 'HK1' | 'HK2') => {
@@ -138,6 +138,15 @@ const App: React.FC = () => {
     }, 100);
   };
 
+  const getColumnLabel = (col: string) => {
+    switch(col) {
+      case 'dtb': return filterSem === Semester.FullYear ? 'ĐTB Cả Năm' : 'ĐTB Học kỳ';
+      case 'ck': return filterSem === Semester.FullYear ? 'Điểm CK (Trung bình)' : 'Điểm Cuối kỳ';
+      case 'avgTX': return 'ĐBQ Thường xuyên';
+      default: return col;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
       <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-40">
@@ -224,9 +233,9 @@ const App: React.FC = () => {
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1">Cột phân tích</label>
               <select value={filterColumn} onChange={e => setFilterColumn(e.target.value as any)} className="w-full border-slate-200 rounded-lg p-2 text-sm">
-                <option value="dtb">ĐTB Học kỳ</option>
-                <option value="ck">Điểm CK</option>
-                <option value="avgTX">ĐBQtx</option>
+                <option value="dtb">ĐTB Học kỳ / Cả năm</option>
+                <option value="ck">Điểm Cuối kỳ</option>
+                <option value="avgTX">ĐBQ Thường xuyên</option>
               </select>
             </div>
           )}
@@ -236,7 +245,7 @@ const App: React.FC = () => {
           <>
             {activeTab === 'general' ? (
               <div className="space-y-8">
-                {/* Statistics Cards & General Charts (Existing logic) */}
+                {/* Statistics Cards & General Charts */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white p-5 rounded-2xl border-l-4 border-blue-500 shadow-sm">
                     <p className="text-xs font-bold text-slate-500 uppercase">Sĩ số</p>
@@ -250,25 +259,33 @@ const App: React.FC = () => {
 
                 <div className="flex flex-wrap gap-3">
                   <button onClick={() => setShowChart('distribution')} className={`px-5 py-2 rounded-xl text-sm font-bold ${showChart === 'distribution' ? 'bg-blue-600 text-white' : 'bg-white border'}`}>📊 Phân loại 6 mức</button>
-                  <button onClick={() => setShowChart('boxplot')} className={`px-5 py-2 rounded-xl text-sm font-bold ${showChart === 'boxplot' ? 'bg-orange-600 text-white' : 'bg-white border'}`}>📦 Boxplot</button>
-                  <button onClick={() => setShowChart('histogram')} className={`px-5 py-2 rounded-xl text-sm font-bold ${showChart === 'histogram' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>📈 Histogram</button>
+                  <button onClick={() => setShowChart('boxplot')} className={`px-5 py-2 rounded-xl text-sm font-bold ${showChart === 'boxplot' ? 'bg-orange-600 text-white' : 'bg-white border'}`}>📦 Biểu đồ hộp</button>
+                  <button onClick={() => setShowChart('histogram')} className={`px-5 py-2 rounded-xl text-sm font-bold ${showChart === 'histogram' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>📈 Phổ điểm</button>
+                  <button onClick={() => setShowChart('above_average')} className={`px-5 py-2 rounded-xl text-sm font-bold ${showChart === 'above_average' ? 'bg-emerald-600 text-white' : 'bg-white border'}`}>📊 Tỉ lệ Trên Trung bình</button>
                 </div>
 
                 {showChart && <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
-                  <PlotlyCharts type={showChart as any} data={showChart === 'histogram' ? filteredData.map(s => s[filterColumn]) : statsByClass} title={`${showChart.toUpperCase()} - ${filterColumn.toUpperCase()}`} />
+                  <PlotlyCharts 
+                    type={showChart as any} 
+                    data={showChart === 'histogram' ? filteredData.map(s => (filterSem === Semester.FullYear && filterColumn === 'dtb' ? s.tbcn : s[filterColumn])) : statsByClass} 
+                    title={`${showChart === 'boxplot' ? 'BIỂU ĐỒ HỘP' : showChart === 'histogram' ? 'PHỔ ĐIỂM' : showChart === 'above_average' ? 'TỈ LỆ TRÊN TRUNG BÌNH' : 'PHÂN LOẠI'} - ${getColumnLabel(filterColumn).toUpperCase()}`} 
+                  />
                 </div>}
 
                 {/* General Table */}
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                   {/* ... Existing table logic ... */}
+                   <div className="p-4 border-b bg-slate-50 flex justify-between items-center">
+                     <h3 className="font-bold text-slate-700 uppercase">Thống kê chi tiết theo lớp</h3>
+                     <span className="text-[10px] text-slate-400">Dữ liệu tính trên cột: {getColumnLabel(filterColumn)}</span>
+                   </div>
                    <table className="w-full text-xs text-left">
                      <thead><tr className="bg-slate-50 border-b">
-                       <th className="p-4">Lớp</th><th className="p-4 text-center">SL</th><th className="p-4 text-center">Mean</th>
+                       <th className="p-4">Lớp</th><th className="p-4 text-center">Sĩ số</th><th className="p-4 text-center">Trung bình</th>
                        {Object.values(Rank).map(r => <th key={r} className="p-4 text-center">{r}</th>)}
                      </tr></thead>
                      <tbody>{statsByClass.map(s => (
-                       <tr key={s.name} className="border-b">
-                         <td className="p-4 font-bold">{s.name}</td><td className="p-4 text-center">{s.scores.length}</td><td className="p-4 text-center">{s.stats?.mean.toFixed(2)}</td>
+                       <tr key={s.name} className="border-b hover:bg-slate-50/50 transition-colors">
+                         <td className="p-4 font-bold">{s.name}</td><td className="p-4 text-center">{s.scores.length}</td><td className="p-4 text-center font-semibold">{s.stats?.mean.toFixed(2)}</td>
                          {Object.values(Rank).map(r => <td key={r} className="p-4 text-center">{s.dist.percentages[r]}</td>)}
                        </tr>
                      ))}</tbody>
@@ -296,19 +313,19 @@ const App: React.FC = () => {
                         <div key={group} className="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-slate-200">
                           <p className="text-[10px] font-bold text-slate-500 uppercase">{group}</p>
                           <p className="text-2xl font-black mt-1">{globalDeltaStats?.distribution.percentages[group]}</p>
-                          <p className="text-[10px] text-slate-400">{globalDeltaStats?.distribution.counts[group]} HS</p>
+                          <p className="text-[10px] text-slate-400">{globalDeltaStats?.distribution.counts[group]} học sinh</p>
                         </div>
                       ))}
                     </div>
 
                     <div className="flex gap-3">
-                      <button onClick={() => setShowChart('delta_scatter')} className={`px-5 py-2 rounded-xl text-sm font-bold ${showChart === 'delta_scatter' ? 'bg-blue-600 text-white' : 'bg-white border'}`}>🎯 Scatter: Quá trình vs Thi</button>
+                      <button onClick={() => setShowChart('delta_scatter')} className={`px-5 py-2 rounded-xl text-sm font-bold ${showChart === 'delta_scatter' ? 'bg-blue-600 text-white' : 'bg-white border'}`}>🎯 Biểu đồ phân tán: Quá trình vs Thi</button>
                       <button onClick={() => setShowChart('delta_bar')} className={`px-5 py-2 rounded-xl text-sm font-bold ${showChart === 'delta_bar' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>📊 Δ Trung bình theo lớp</button>
                     </div>
 
                     {showChart && (showChart.startsWith('delta')) && (
                       <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
-                        <PlotlyCharts type={showChart as any} data={showChart === 'delta_scatter' ? filteredData : deltaByClass} title={`Phân tích Độ lệch - ${filterSem}`} />
+                        <PlotlyCharts type={showChart as any} data={showChart === 'delta_scatter' ? filteredData : deltaByClass} title={`PHÂN TÍCH ĐỘ LỆCH - ${filterSem}`} />
                       </div>
                     )}
 
@@ -317,7 +334,7 @@ const App: React.FC = () => {
                       <div className="p-6 border-b bg-slate-50"><h3 className="font-black text-slate-800 uppercase">Độ lệch Trung bình Lớp</h3></div>
                       <table className="w-full text-xs text-left">
                         <thead><tr className="bg-slate-100 font-bold border-b">
-                          <th className="p-4">Lớp</th><th className="p-4 text-center">n (Hợp lệ)</th>
+                          <th className="p-4">Lớp</th><th className="p-4 text-center">Sĩ số hợp lệ</th>
                           <th className="p-4 text-center">Mean(TX)</th><th className="p-4 text-center">Mean(CK)</th>
                           <th className="p-4 text-center bg-slate-200">Δ Lớp</th>
                           <th className="p-4 text-center text-red-600">Thi thấp hơn (%)</th>
@@ -346,9 +363,9 @@ const App: React.FC = () => {
                       <div className="max-h-[500px] overflow-y-auto">
                         <table className="w-full text-xs text-left">
                           <thead className="sticky top-0 bg-slate-100 z-10"><tr>
-                            <th className="p-3">ID</th><th className="p-3">Họ và tên</th><th className="p-3">Lớp</th>
-                            <th className="p-3 text-center">ĐBQtx</th><th className="p-3 text-center">CK</th>
-                            <th className="p-3 text-center bg-slate-200">Δ</th><th className="p-3">Nhóm</th>
+                            <th className="p-3">Mã HS</th><th className="p-3">Họ và tên</th><th className="p-3">Lớp</th>
+                            <th className="p-3 text-center">ĐBQtx</th><th className="p-3 text-center">Điểm thi</th>
+                            <th className="p-3 text-center bg-slate-200">Δ</th><th className="p-3">Nhóm độ lệch</th>
                           </tr></thead>
                           <tbody>{filteredData.filter(s => s.avgTX !== null && s.ck !== null).map(s => {
                             const d = s.avgTX - s.ck;
@@ -372,12 +389,13 @@ const App: React.FC = () => {
           </>
         ) : (
           <div className="text-center py-32 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-            <h3 className="text-lg font-black text-slate-800 uppercase">Hệ thống đang chờ dữ liệu</h3>
+            <h3 className="text-lg font-black text-slate-800 uppercase">Hệ thống đang chờ tải dữ liệu CSV</h3>
+            <p className="text-slate-400 text-sm mt-2">Vui lòng chọn tệp CSV tương ứng với từng khối lớp phía trên</p>
           </div>
         )}
       </main>
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t py-2 px-8 text-[10px] text-center text-slate-400 z-50">
-        Công thức Độ lệch: Δ = ĐBQtx - CK (Thi thấp hơn quá trình nếu Δ ≥ 0)
+        Công thức Độ lệch: Δ = ĐBQtx - Điểm Thi (Thi thấp hơn quá trình nếu Δ > 0) | Hệ thống Thống kê TTCM Pro v2.5
       </footer>
     </div>
   );

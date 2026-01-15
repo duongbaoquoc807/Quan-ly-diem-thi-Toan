@@ -1,0 +1,8 @@
+{
+  "name": "math_it_score_management_system",
+  "description": "Ứng dụng phân tích và báo cáo dữ liệu học tập dành cho Tổ chuyên môn (TTCM), hỗ trợ import CSV, thống kê đa chiều và xuất báo cáo Excel/PDF/Word.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
